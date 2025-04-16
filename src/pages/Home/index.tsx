@@ -1,12 +1,10 @@
 import { Coffee, Package, ShoppingCart, Timer } from '@phosphor-icons/react'
 import { useTheme } from 'styled-components'
-
 import { CoffeeCard } from '../../components/CoffeeCard'
-
 import { CoffeeList, Heading, Hero, HeroContent, Info, Navbar } from './styles'
 import { useEffect, useState } from 'react';
 import { Radio } from '../../components/Form/Radio';
-import { api } from '../../serves/api';
+import { api } from '../../server/api';
 
 interface Coffee {
   id: string;
@@ -22,19 +20,25 @@ interface Coffee {
 export function Home() {
   const theme = useTheme();
   const [coffees, setCoffees] = useState<Coffee[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
 
   useEffect(() => {
     async function fetchCoffees() {
-      const response = await api('/coffees');
-      setCoffees(response.data);
-
-      console.log({coffees: response.data});
+      try {
+        const response = await api.get('/coffees');
+        const sortedCoffees = response.data.sort((a: Coffee, b: Coffee) => a.title.localeCompare(b.title));
+        setCoffees(sortedCoffees);
+      } catch (error) {
+        console.error('Erro ao carregar cafés', error);
+      }
     }
     fetchCoffees();
   }, []);
 
+  const filteredCoffees = selectedCategory
+    ? coffees.filter((coffee) => coffee.tags.includes(selectedCategory))
+    : coffees;
 
-  
   function incrementQuantity(id: string) {
     setCoffees((prevState) =>
       prevState.map((coffee) => {
@@ -42,11 +46,10 @@ export function Home() {
           return {
             ...coffee,
             quantity: coffee.quantity + 1,
-          }
+          };
         }
-        return coffee
-      }
-      ),
+        return coffee;
+      })
     );
   }
 
@@ -57,10 +60,10 @@ export function Home() {
           return {
             ...coffee,
             quantity: coffee.quantity - 1,
-          }
+          };
         }
-        return coffee
-      }),
+        return coffee;
+      })
     );
   }
 
@@ -70,13 +73,12 @@ export function Home() {
         if (coffee.id === id) {
           return {
             ...coffee,
-            favorite: !coffee.favorite,
-          }
+            favorite: !coffee.favorite, // Alterna o valor de "favorite"
+          };
         }
-        return coffee
-      }),
-    )
-    
+        return coffee;
+      })
+    );
   }
 
   return (
@@ -86,7 +88,6 @@ export function Home() {
           <div>
             <Heading>
               <h1>Encontre o café perfeito para qualquer hora do dia</h1>
-
               <span>
                 Com o Coffee Delivery você recebe seu café onde estiver, a
                 qualquer hora
@@ -143,35 +144,21 @@ export function Home() {
       </Hero>
 
       <CoffeeList>
-
         <h2>Nossos cafés</h2>
         <Navbar>
-          <Radio
-            onClick={() => {}}
-            isSelected={false}
-            value="tradicional"
-          >
+          <Radio onClick={() => setSelectedCategory('tradicional')} isSelected={selectedCategory === 'tradicional'} value="tradicional">
             <span>Tradicional</span>
           </Radio>
-          <Radio
-            onClick={() => {}}
-            isSelected={false}
-            value="gelado"
-          >
-            <span>Gelado</span>
+          <Radio onClick={() => setSelectedCategory('especial')} isSelected={selectedCategory === 'especial'} value="especial">
+            <span>Especial</span>
           </Radio>
-          <Radio
-            onClick={() => {}}
-            isSelected={false}
-            value="com leite"
-          >
+          <Radio onClick={() => setSelectedCategory('com leite')} isSelected={selectedCategory === 'com leite'} value="com leite">
             <span>Com leite</span>
           </Radio>
         </Navbar>
 
-
         <div>
-          {coffees.map((coffee) => (
+          {filteredCoffees.map((coffee) => (
             <CoffeeCard
               key={coffee.id}
               coffee={coffee}
@@ -183,5 +170,5 @@ export function Home() {
         </div>
       </CoffeeList>
     </div>
-  )
+  );
 }
