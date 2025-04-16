@@ -80,6 +80,8 @@ export function Cart() {
     }
   ]);
 
+  const [paymentMethod, setPaymentMethod] = useState<string>('cash'); // Default: Pix (sem juros)
+
   const amountTags: string[] = [];
   
   coffeesInCart.map(coffee => coffee.tags.map((tag) => {
@@ -87,7 +89,7 @@ export function Cart() {
       amountTags.push(tag);
     }
   }));
-  
+
   const totalItemsPrice = coffeesInCart.reduce((currencyValue, coffee) => {
     return currencyValue + coffee.price * coffee.quantity
   }, 0);
@@ -105,9 +107,8 @@ export function Cart() {
           }
         }
         return coffee
-      }),
+      } ),
     )
-    
   }
 
   function handleItemDecrement(itemId: string) {
@@ -123,7 +124,7 @@ export function Cart() {
           }
         }
         return coffee
-      }),
+      } ),
     )
   }
 
@@ -133,62 +134,71 @@ export function Cart() {
     )
   }
 
+  // Função para calcular o total com base no método de pagamento
+  const paymentRates = {
+    credit: 3.85, // 3.85% de juros para Cartão de Crédito
+    debit: 1.85,  // 1.85% de juros para Cartão de Débito
+    cash: 0,      // 0% de juros para Pix
+  };
+
+  const calculateFinalAmount = () => {
+    const rate = paymentRates[paymentMethod];
+    const totalWithFrete = totalItemsPrice + DELIVERY_PRICE;
+    return totalWithFrete * (1 + rate / 100); // Aplica a taxa de juros
+  };
+
   return (
     <Container>
-      
-
       <InfoContainer>
-      <PaymentContainer>
-            <PaymentHeading>
-              <CurrencyDollar size={22} />
+        <PaymentContainer>
+          <PaymentHeading>
+            <CurrencyDollar size={22} />
+            <div>
+              <span>Pagamento</span>
+              <p>
+                O pagamento é feito na entrega. Escolha a forma que deseja
+                pagar
+              </p>
+            </div>
+          </PaymentHeading>
 
-              <div>
-                <span>Pagamento</span>
+          <PaymentOptions>
+            <div>
+              <Radio
+                isSelected={paymentMethod === 'credit'}
+                onClick={() => setPaymentMethod('credit')}
+                value="credit"
+              >
+                <CreditCard size={16} />
+                <span>Cartão de crédito</span>
+              </Radio>
 
-                <p>
-                  O pagamento é feito na entrega. Escolha a forma que deseja
-                  pagar
-                </p>
-              </div>
-            </PaymentHeading>
+              <Radio
+                isSelected={paymentMethod === 'debit'}
+                onClick={() => setPaymentMethod('debit')}
+                value="debit"
+              >
+                <Bank size={16} />
+                <span>Cartão de débito</span>
+              </Radio>
 
-            <PaymentOptions>
-              <div>
-                <Radio
-                  isSelected={false}
-                  onClick={() => {}}
-                  value="credit"
-                >
-                  <CreditCard size={16} />
-                  <span>Cartão de crédito</span>
-                </Radio>
+              <Radio
+                isSelected={paymentMethod === 'cash'}
+                onClick={() => setPaymentMethod('cash')}
+                value="cash"
+              >
+                <Money size={16} />
+                <span>Pix ou Dinheiro</span>
+              </Radio>
+            </div>
 
-                <Radio
-                  isSelected={false}
-                  onClick={() => {}}
-                  value="debit"
-                >
-                  <Bank size={16} />
-                  <span>Cartão de débito</span>
-                </Radio>
-
-                <Radio
-                  isSelected={true}
-                  onClick={() => {}}
-                  value="cash"
-                >
-                  <Money size={16} />
-                  <span>Pix ou Dinheiro</span>
-                </Radio>
-              </div>
-
-              {false ? (
-                <PaymentErrorMessage role="alert">
-                  <span>Selecione uma forma de pagamento</span>
-                </PaymentErrorMessage>
-              ) : null}
-            </PaymentOptions>
-          </PaymentContainer>
+            {false ? (
+              <PaymentErrorMessage role="alert">
+                <span>Selecione uma forma de pagamento</span>
+              </PaymentErrorMessage>
+            ) : null}
+          </PaymentOptions>
+        </PaymentContainer>
       </InfoContainer>
 
       <InfoContainer>
@@ -200,14 +210,13 @@ export function Cart() {
               <Coffee>
                 <div>
                   <img src={coffee.image} alt={coffee.title} />
-
                   <div>
                     <span>{coffee.title}</span>
-                      <Tags>
-                        {coffee.tags.map((tag) => (
-                          <span key={tag}>{tag}</span>
-                        ))}
-                      </Tags>
+                    <Tags>
+                      {coffee.tags.map((tag) => (
+                        <span key={tag}>{tag}</span>
+                      ))}
+                    </Tags>
 
                     <CoffeeInfo>
                       <QuantityInput
@@ -226,7 +235,6 @@ export function Cart() {
 
                 <aside>R$ {coffee.subTotal?.toFixed(2)}</aside>
               </Coffee>
-
               <span />
             </Fragment>
           ))}
@@ -258,7 +266,7 @@ export function Cart() {
                 {new Intl.NumberFormat('pt-br', {
                   currency: 'BRL',
                   style: 'currency',
-                }).format(totalItemsPrice + (DELIVERY_PRICE * amountTags.length))}
+                }).format(calculateFinalAmount())}
               </span>
             </div>
           </CartTotalInfo>
@@ -268,7 +276,6 @@ export function Cart() {
           </CheckoutButton>
         </CartTotal>
       </InfoContainer>
-      {/* <Success /> */}
     </Container>
   )
 }
